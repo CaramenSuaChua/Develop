@@ -12,7 +12,7 @@ from django.http import JsonResponse
 @api_view(['GET'])
 def hello_api(request):
     return Response({
-        "message": "Hello World test1212 from Django Rest Framework API!",
+        "message": "Hello World test12121 from Django Rest Framework API!",
         "status": "Success",
         "data": {
             "service": "Backend API",
