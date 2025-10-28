@@ -13,7 +13,7 @@ from django.http import JsonResponse
 def hello_api(request):
     return Response({
         "message": "Hello from Django API!",
-        "status": "success",
+        "status": "Success",
         "data": {
             "service": "Backend API",
             "version": "1.0"
