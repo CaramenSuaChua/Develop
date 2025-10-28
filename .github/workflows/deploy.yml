@@ -1,16 +1,13 @@
-name: 🚀 Deploy Django to EC2
+name: 🚀 Deploy Django to Private EC2
 
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
 
 jobs:
   deploy:
-    name: 🎯 Deploy to EC2
+    name: 🎯 Deploy to Private EC2 via Public EC2
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
     
     steps:
     - name: 📥 Checkout code
@@ -19,14 +16,14 @@ jobs:
     - name: 🛠️ Setup SSH
       uses: webfactory/ssh-agent@v0.8.0
       with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        ssh-private-key: ${{ secrets.EC2_KEY_PAIR }}
 
-    - name: 🚀 Deploy to EC2
+    - name: 🚀 Deploy via Public EC2
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        host: ${{ secrets.EC2_PUBLIC_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_KEY_PAIR }}
         script_stop: true
         script: |
           set -e
@@ -34,19 +31,16 @@ jobs:
           echo "📅 $(date)"
           echo "📝 Commit: ${{ github.event.head_commit.message }}"
           
-          # Run deploy script
-          /home/ubuntu/deploy.sh
+          # SSH từ Public EC2 vào Private EC2 để chạy deploy.sh
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/Demo.pem ubuntu@10.10.20.21 << 'EOF'
+            echo "🔧 Running deploy.sh on Private EC2..."
+            echo "📂 Current directory: $(pwd)"
+            echo "👤 Current user: $(whoami)"
+            
+            # Chạy deploy script
+            cd /home/ubuntu
+            ls -la
+            echo "✅ Deployment completed on Private EC2"
+          EOF
           
           echo "=== Deployment Complete ==="
-
-    - name: ✅ Verify Deployment
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          echo "=== Verification ==="
-          # Test if Django is running
-          curl -f http://localhost:8000/api/hello/ || echo "API check failed"
-          echo "=== Verification Complete ==="
