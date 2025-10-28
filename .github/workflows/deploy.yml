@@ -31,7 +31,11 @@ jobs:
           echo "📅 $(date)"
           echo "📝 Commit: ${{ github.event.head_commit.message }}"
           
+          sudo chmod 600 /home/ubuntu/Demo.pem
+          sudo chown ubuntu:ubuntu /home/ubuntu/Demo.pem
+
           # SSH từ Public EC2 vào Private EC2 để chạy deploy.sh
+          sudo su
           ssh -o StrictHostKeyChecking=no -i /home/ubuntu/Demo.pem ubuntu@10.10.20.21 << 'EOF'
             echo "🔧 Running deploy.sh on Private EC2..."
             echo "📂 Current directory: $(pwd)"
