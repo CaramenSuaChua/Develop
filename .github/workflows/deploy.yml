@@ -1,0 +1,52 @@
+name: 🚀 Deploy Django to EC2
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    name: 🎯 Deploy to EC2
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🛠️ Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: 🚀 Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script_stop: true
+        script: |
+          set -e
+          echo "=== Starting Deployment ==="
+          echo "📅 $(date)"
+          echo "📝 Commit: ${{ github.event.head_commit.message }}"
+          
+          # Run deploy script
+          /home/ubuntu/deploy.sh
+          
+          echo "=== Deployment Complete ==="
+
+    - name: ✅ Verify Deployment
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          echo "=== Verification ==="
+          # Test if Django is running
+          curl -f http://localhost:8000/api/hello/ || echo "API check failed"
+          echo "=== Verification Complete ==="

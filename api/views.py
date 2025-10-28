@@ -12,8 +12,8 @@ from django.http import JsonResponse
 @api_view(['GET'])
 def hello_api(request):
     return Response({
-        "message": "Hello from Django API!",
-        "status": "success",
+        "message": "Hello World test from Django Rest Framework API!",
+        "status": "Success",
         "data": {
             "service": "Backend API",
             "version": "1.0"
