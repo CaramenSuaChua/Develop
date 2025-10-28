@@ -26,6 +26,9 @@ jobs:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        timeout: 30s
+        command_timeout: 10m
         script_stop: true
         script: |
           set -e
@@ -33,18 +36,20 @@ jobs:
           echo "📅 $(date)"
           echo "📝 Commit: ${{ github.event.head_commit.message }}"
           
-          # Run deploy script
-          sudo su
+          # Không dùng sudo su (sẽ gây treo)
           /home/ubuntu/deploy.sh
           
           echo "=== Deployment Complete ==="
 
     - name: ✅ Verify Deployment
+      if: always()
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        timeout: 30s
         script: |
           echo "=== Verification ==="
           # Test if Django is running
