@@ -44,7 +44,7 @@ jobs:
             # Chạy deploy script
             cd /home/ubuntu
             ls -la
-            bash ./deploy.sh 
+            bash ./deploy1.sh 
             echo "✅ Deployment completed on Private EC2"
           EOF
           
