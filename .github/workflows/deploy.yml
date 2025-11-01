@@ -36,7 +36,7 @@ jobs:
 
           # SSH từ Public EC2 vào Private EC2 để chạy deploy.sh
           sudo su
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/Demo.pem ubuntu@10.10.20.88 << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/Demo.pem ubuntu@10.10.20.17 << 'EOF'
             echo "🔧 Running deploy.sh on Private EC2..."
             echo "📂 Current directory: $(pwd)"
             echo "👤 Current user: $(whoami)"
