@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 import json
+from urllib.parse import unquote
 from .models import Product
 from .serializers import ProductSerializer
 
@@ -18,17 +19,32 @@ class ProductListAPIView(APIView):
     
     def post(self, request):
         try:
-            # Parse JSON data manually từ request body
-            if hasattr(request, '_body'):
-                raw_data = request._body
-            else:
-                raw_data = request.body
-                
-            print("Raw body:", raw_data)
+            print("Request content type:", request.content_type)
+            print("Request POST data:", request.POST)
+            print("Request data:", request.data)
             
-            # Parse JSON
-            data = json.loads(raw_data)
-            print("Parsed data:", data)
+            # Xử lý cả form data và JSON
+            if request.content_type == 'application/x-www-form-urlencoded':
+                # Extract từ form data
+                content_type = request.POST.get('_content_type', '')
+                json_content = request.POST.get('_content', '')
+                
+                if json_content:
+                    # URL decode và parse JSON
+                    decoded_content = unquote(json_content)
+                    print("Decoded content:", decoded_content)
+                    data = json.loads(decoded_content)
+                else:
+                    # Nếu là form data thông thường
+                    data = {
+                        'name': request.POST.get('name'),
+                        'price': request.POST.get('price')
+                    }
+            else:
+                # Nếu là JSON raw
+                data = request.data
+            
+            print("Final data for serializer:", data)
             
             serializer = ProductSerializer(data=data)
             
@@ -41,15 +57,14 @@ class ProductListAPIView(APIView):
             else:
                 return Response({
                     "message": "Validation error",
-                    "errors": serializer.errors,
-                    "debug_parsed_data": data
+                    "errors": serializer.errors
                 }, status=status.HTTP_400_BAD_REQUEST)
                 
         except json.JSONDecodeError as e:
             return Response({
-                "message": "Invalid JSON format",
+                "message": "Invalid JSON format in _content",
                 "error": str(e),
-                "debug_raw_body": str(raw_data)
+                "debug_raw_post": dict(request.POST)
             }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({
