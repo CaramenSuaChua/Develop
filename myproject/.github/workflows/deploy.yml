@@ -1,0 +1,51 @@
+name: 🚀 Deploy Django to Private EC2
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy:
+    name: 🎯 Deploy to Private EC2 via Public EC2
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🛠️ Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.EC2_KEY_PAIR }}
+
+    - name: 🚀 Deploy via Public EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_PUBLIC_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_KEY_PAIR }}
+        script_stop: true
+        script: |
+          set -e
+          echo "=== Starting Deployment ==="
+          echo "📅 $(date)"
+          echo "📝 Commit: ${{ github.event.head_commit.message }}"
+          
+          sudo chmod 600 /home/ubuntu/Demo.pem
+          sudo chown ubuntu:ubuntu /home/ubuntu/Demo.pem
+
+          # SSH từ Public EC2 vào Private EC2 để chạy deploy.sh
+          sudo su
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/Demo.pem ubuntu@10.10.20.88 << 'EOF'
+            echo "🔧 Running deploy.sh on Private EC2..."
+            echo "📂 Current directory: $(pwd)"
+            echo "👤 Current user: $(whoami)"
+            
+            # Chạy deploy script
+            cd /home/ubuntu
+            ls -la
+            bash ./deploy.sh 
+            echo "✅ Deployment completed on Private EC2"
+          EOF
+          
+          echo "=== Deployment Complete ==="
