@@ -1,19 +1,12 @@
+# serializers.py
 from rest_framework import serializers
-from .models import Product, Order
+from .models import Product
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = '__all__'
+        fields = ['id', 'name', 'price', 'created_at', 'updated_at']
 
-class OrderSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='product.name', read_only=True)
-    total_price = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Order
-        fields = '__all__'
-        read_only_fields = ('created_at',)
-
-    def get_total_price(self, obj):
-        return obj.quantity * obj.product.price
+    def to_internal_value(self, data):
+        print("Raw data received:", data)  # Debug: xem dữ liệu nhận được
+        return super().to_internal_value(data)

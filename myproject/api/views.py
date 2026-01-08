@@ -1,10 +1,13 @@
-from rest_framework.views import APIView
+
+
+from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Product, Order
 from .serializers import ProductSerializer, OrderSerializer
 from rest_framework.decorators import api_view
 from django.http import JsonResponse
-from openai import OpenAI
+
 
 @api_view(['GET'])
 def hello_api(request):
@@ -17,15 +20,15 @@ def hello_api(request):
         }
     })
 
-class ProductListAPIView(APIView):
-    authentication_classes = []
-    permission_classes = []
-    
-    def get(self, request):
-        products = Product.objects.all()
-        serializer = ProductSerializer(products, many=True)
+@api_view(['GET', 'POST'])
+def products(request):
+    if request.method == 'GET':
         return Response({
-            "products": serializer.data
+            "products": [
+                {"id": 1, "name": "Product A", "price": 29.99},
+                {"id": 2, "name": "Product B", "price": 39.99},
+                {"id": 3, "name": "Product C", "price": 49.99}
+            ]
         })
     elif request.method == 'POST':
         return Response({
@@ -33,26 +36,8 @@ class ProductListAPIView(APIView):
             "data": request.data
         })
 
-@api_view(['GET', 'POST'])
-def test_openai(request):
-    client = OpenAI(
-        base_url="http://192.168.200.135:11434/v1",
-        api_key="ollama"
-    )
 
-    try:
-        resp = client.chat.completions.create(
-            model="gpt-oss:20b",
-            messages=[
-                {"role": "user", "content": "ERPNext dùng cho doanh nghiệp nào?"}
-            ],
-            max_tokens=500,
-            temperature=0.7
-        )
-        print("✅ Kết nối thành công!")
-        print(f"Phản hồi: {resp.choices[0].message.content}")
-    except Exception as e:
-        print(f"❌ Lỗi: {e}")
+
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
@@ -74,7 +59,3 @@ class OrderViewSet(viewsets.ModelViewSet):
         pending_orders = Order.objects.filter(status='pending')
         serializer = self.get_serializer(pending_orders, many=True)
         return Response(serializer.data)
-
-
-
-
