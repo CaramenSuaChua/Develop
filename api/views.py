@@ -1,7 +1,4 @@
-
-
-from rest_framework import viewsets
-from rest_framework.decorators import action
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Product, Order
 from .serializers import ProductSerializer, OrderSerializer
@@ -20,15 +17,15 @@ def hello_api(request):
         }
     })
 
-@api_view(['GET', 'POST'])
-def products(request):
-    if request.method == 'GET':
+class ProductListAPIView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    
+    def get(self, request):
+        products = Product.objects.all()
+        serializer = ProductSerializer(products, many=True)
         return Response({
-            "products": [
-                {"id": 1, "name": "Product A", "price": 29.99},
-                {"id": 2, "name": "Product B", "price": 39.99},
-                {"id": 3, "name": "Product C", "price": 49.99}
-            ]
+            "products": serializer.data
         })
     elif request.method == 'POST':
         return Response({
