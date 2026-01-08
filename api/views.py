@@ -1,10 +1,21 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-import json
-from urllib.parse import unquote
-from .models import Product
-from .serializers import ProductSerializer
+from .models import Product, Order
+from .serializers import ProductSerializer, OrderSerializer
+from rest_framework.decorators import api_view
+from django.http import JsonResponse
+from openai import OpenAI
+
+@api_view(['GET'])
+def hello_api(request):
+    return Response({
+        "message": "Hello World 1 from Django Rest Framework API!",
+        "status": "Success",
+        "data": {
+            "service": "Backend API",
+            "version": "1.0"
+        }
+    })
 
 class ProductListAPIView(APIView):
     authentication_classes = []
@@ -16,58 +27,54 @@ class ProductListAPIView(APIView):
         return Response({
             "products": serializer.data
         })
-    
-    def post(self, request):
-        try:
-            print("Request content type:", request.content_type)
-            print("Request POST data:", request.POST)
-            print("Request data:", request.data)
-            
-            # Xử lý cả form data và JSON
-            if request.content_type == 'application/x-www-form-urlencoded':
-                # Extract từ form data
-                content_type = request.POST.get('_content_type', '')
-                json_content = request.POST.get('_content', '')
-                
-                if json_content:
-                    # URL decode và parse JSON
-                    decoded_content = unquote(json_content)
-                    print("Decoded content:", decoded_content)
-                    data = json.loads(decoded_content)
-                else:
-                    # Nếu là form data thông thường
-                    data = {
-                        'name': request.POST.get('name'),
-                        'price': request.POST.get('price')
-                    }
-            else:
-                # Nếu là JSON raw
-                data = request.data
-            
-            print("Final data for serializer:", data)
-            
-            serializer = ProductSerializer(data=data)
-            
-            if serializer.is_valid():
-                product = serializer.save()
-                return Response({
-                    "message": "Product created successfully",
-                    "data": ProductSerializer(product).data
-                }, status=status.HTTP_201_CREATED)
-            else:
-                return Response({
-                    "message": "Validation error",
-                    "errors": serializer.errors
-                }, status=status.HTTP_400_BAD_REQUEST)
-                
-        except json.JSONDecodeError as e:
-            return Response({
-                "message": "Invalid JSON format in _content",
-                "error": str(e),
-                "debug_raw_post": dict(request.POST)
-            }, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({
-                "message": "Server error",
-                "error": str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    elif request.method == 'POST':
+        return Response({
+            "message": "Product created successfully",
+            "data": request.data
+        })
+
+@api_view(['GET', 'POST'])
+def test_openai(request):
+    client = OpenAI(
+        base_url="http://192.168.200.135:11434/v1",
+        api_key="ollama"
+    )
+
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-oss:20b",
+            messages=[
+                {"role": "user", "content": "ERPNext dùng cho doanh nghiệp nào?"}
+            ],
+            max_tokens=500,
+            temperature=0.7
+        )
+        print("✅ Kết nối thành công!")
+        print(f"Phản hồi: {resp.choices[0].message.content}")
+    except Exception as e:
+        print(f"❌ Lỗi: {e}")
+
+class ProductViewSet(viewsets.ModelViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+
+    @action(detail=True, methods=['post'])
+    def mark_completed(self, request, pk=None):
+        order = self.get_object()
+        order.status = 'completed'
+        order.save()
+        return Response({'status': 'order completed'})
+
+    @action(detail=False)
+    def pending_orders(self, request):
+        pending_orders = Order.objects.filter(status='pending')
+        serializer = self.get_serializer(pending_orders, many=True)
+        return Response(serializer.data)
+
+
+
+
